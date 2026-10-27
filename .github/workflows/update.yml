@@ -1,0 +1,29 @@
+name: publish-update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "App.tsx"
+      - "assets/**"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Kirim pembaruan OTA
+        run: npx --yes eas-cli@latest update --channel preview --message "${COMMIT_MESSAGE:-manual}" --non-interactive
