@@ -117,8 +117,14 @@ export async function GET(request: NextRequest) {
     link = await requestDownload(id, "mp3", 34_000);
   } catch (error) {
     if (error instanceof AppError) {
+      console.error(
+        `[ytmp3] link status=${error.status} upstream=${error.upstream ?? "-"} ${error.detail ?? ""}`
+      );
+
       return fail(error.message, error.status);
     }
+
+    console.error("[ytmp3] link", error);
 
     return fail("Gagal membuat link unduhan MP3.", 502);
   }
