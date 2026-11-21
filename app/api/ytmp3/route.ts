@@ -215,9 +215,15 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("[ytmp3]", error);
 
+    const slow =
+      error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
+
     return fail(
-      error instanceof Error ? error.message : "Gagal menyiapkan MP3.",
-      502,
+      slow
+        ? "Server terlalu lama menyiapkan MP3, file diunduh tanpa cover."
+        : "Gagal menyiapkan MP3.",
+      slow ? 504 : 502,
       link.url
     );
   }
