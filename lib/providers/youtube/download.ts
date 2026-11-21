@@ -4,7 +4,7 @@ import { hostConfig } from "../../rapidapi/hosts";
 import { isObj, str } from "../pick";
 import { watchUrl } from "./target";
 
-export const VIDEO_FORMATS = ["1080p", "720p", "480p", "360p", "240p"] as const;
+export const VIDEO_FORMATS = ["1080p", "720p", "480p", "360p", "240p", "144p"] as const;
 
 const ALLOWED = new Set<string>([...VIDEO_FORMATS, "mp3"]);
 
