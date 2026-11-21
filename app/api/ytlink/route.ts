@@ -54,8 +54,15 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof AppError) {
+      console.error(
+        `[ytlink] ${data.f} status=${error.status} upstream=${error.upstream ?? "-"} ${error.detail ?? ""}`
+      );
+
       return fail(error.message, error.status);
     }
+
+    console.error("[ytlink]", error);
+
 
     return fail("Gagal membuat link unduhan.", 502);
   }
