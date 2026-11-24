@@ -119,6 +119,59 @@ const COVER_KEYS = [
   "poster",
 ];
 
+const PHOTO_KEY_PATTERN = /(image|photo|slide|picture)/i;
+const PHOTO_KEY_SKIP = /(cover|thumb|avatar|author|music|icon|emoji|sticker|sprite)/i;
+const PHOTO_URL_PATTERN = /(jpe?g|webp|png|heic|avif|photomode|tplv)/i;
+
+function deepPhotos(node: unknown, depth = 0): string[] {
+  if (depth > 5 || !isObj(node)) {
+    return [];
+  }
+
+  for (const [key, value] of Object.entries(node)) {
+    if (!PHOTO_KEY_PATTERN.test(key) || PHOTO_KEY_SKIP.test(key)) {
+      continue;
+    }
+
+    let list: unknown = value;
+
+    if (isObj(list)) {
+      list = list.images ?? list.photos ?? list.list ?? list.image_list;
+    }
+
+    if (Array.isArray(list) && list.length > 0) {
+      const urls = list
+        .map((item) => bestImageUrl(item))
+        .filter((item): item is string => Boolean(item && PHOTO_URL_PATTERN.test(item)));
+
+      if (urls.length > 0) {
+        return Array.from(new Set(urls));
+      }
+    }
+  }
+
+  for (const value of Object.values(node)) {
+    const found = deepPhotos(value, depth + 1);
+
+    if (found.length > 0) {
+      return found;
+    }
+  }
+
+  return [];
+}
+
+function brief(url?: string) {
+  if (!url) {
+    return "-";
+  }
+
+  const match = /^https?:\/\/([^/?#]+)([^?#]*)/i.exec(url);
+  const ext = match?.[2].match(/\.([a-z0-9]{2,5})$/i)?.[1] ?? "?";
+
+  return `${match?.[1] ?? "?"}.${ext}`;
+}
+
 function extractPhotos(root: Json, extra: Json[]) {
   for (const source of [root, ...extra]) {
     for (const key of PHOTO_KEYS) {
@@ -140,7 +193,7 @@ function extractPhotos(root: Json, extra: Json[]) {
     }
   }
 
-  return [];
+  return deepPhotos(root);
 }
 
 function usernameFromUrl(value: string) {
@@ -199,6 +252,12 @@ export function normalizeTikTok(payload: unknown, inputUrl: string): TikTokRaw {
   }
 
   const audioUrl = pickUrl(mediaSources, AUDIO_KEYS);
+
+  console.info(
+    `[tiktok] shape root=[${Object.keys(root).slice(0, 40).join(",")}] video=[${
+      videoObj ? Object.keys(videoObj).slice(0, 30).join(",") : "-"
+    }] photos=${photos.length} videoUrl=${brief(videoUrl)} audioUrl=${brief(audioUrl)}`
+  );
   const musicObj = pickObj(mediaSources, ["music_info", "musicInfo", "music"]);
   const authorSources = authorObj ? [authorObj, root] : [root];
   const statSources = statsObj ? [statsObj, root] : [root];
